@@ -67,7 +67,7 @@ class MyWebServer(SocketServer.BaseRequestHandler):
 			path += "index.html"
 		elif path.endswith("deep"):
 			path += "/index.html"
-		elif path.endswith("deep.css")
+		elif path.endswith("deep.css"):
 			path = "/deep/deep.css"
 
 		self.open_path(path)
