@@ -32,15 +32,15 @@ class MyWebServer(SocketServer.BaseRequestHandler):
 	def handle(self):
 
 		self.data = self.request.recv(1024).strip()
-
-		#print self.client_address
 		
 		self.header=""
 		self.body=""
+		self.code=""
 
 		self.parse_request()
 		self.request.sendall(self.header + "\n")
-		self.request.sendall(self.body)		
+		self.request.sendall(self.body)
+		self.server_log()		
 
 	def parse_request(self):
 
@@ -68,7 +68,6 @@ class MyWebServer(SocketServer.BaseRequestHandler):
 
 		self.open_path(path)
 					
-
 	def open_path(self, path):
 			
 		fileName = os.getcwd() + "/www" + path
@@ -79,13 +78,15 @@ class MyWebServer(SocketServer.BaseRequestHandler):
 			if ft == "error":
 				raise IOError
 			self.header += "HTTP/1.1 200 OK\n"
+			self.code = "200"
 			self.header += ft
 			self.header += "Content-length: %d\n" % os.path.getsize(fileName)
-			self.header += "Date: %s\n" % self.date_time()
+			self.header += "Date: %s\n" % self.date_time("header")
 			self.body += f.read()
 			f.close()
 		except (IOError, OSError):
 			self.header += "HTTP/1.1 404\n"
+			self.code = "404"
 			self.body += "Page Not Found\n"
 	
 	def file_type(self, path):
@@ -97,18 +98,31 @@ class MyWebServer(SocketServer.BaseRequestHandler):
 		else:
 			return "error"
 
-	def date_time(self):
+	def server_log(self):
+		addy = self.client_address[0]
+		time = self.date_time("server")
+		request = self.data.split("\n")
+		r = request[0].rstrip("\r\n")
+
+		s = "%s - - %s \"%s\" %s -" % (addy,time,r, self.code)
+
+		print s
+
+	def date_time(self, tag):
 
 		weekdayname = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 		monthname = [None,'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun','Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 		now = time.time()
 		year, month, day, hh, mm, ss, wd, y, z = time.localtime(now)
-		s = "%s, %02d %3s %4d %02d:%02d:%02d GMT" % (weekdayname[wd],day,monthname[month],year,hh,mm,ss)
-		return s
 
+		h = "%s, %02d %3s %4d %02d:%02d:%02d MST" % (weekdayname[wd],day,monthname[month],year,hh,mm,ss)
+		s = "[%02d/%3s/%4d %02d:%02d:%02d]" % (day,monthname[month],year,hh,mm,ss)
 
-		
+		if tag == "header":
+			return h
+		else:
+			return s
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
